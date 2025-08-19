@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Input } from "@/components/ui/input"
-import { Clock, Calendar, ChevronDown } from "lucide-react"
+import { Clock, MapPin } from "lucide-react"
 import type { Screen } from "@/app/page"
 import { BackButton } from "./back-button"
 
@@ -33,30 +33,20 @@ export function SetLocationScreen({
   initialDropoff = "",
   goBack,
 }: SetLocationScreenProps) {
-  const [pickupLocation, setPickupLocation] = useState(initialPickup)
+  const [pickupLocation, setPickupLocation] = useState(initialPickup || "My Location")
   const [dropoffLocation, setDropoffLocation] = useState(initialDropoff)
-  const [showTimingModal, setShowTimingModal] = useState(false)
-  const [pickupTiming, setPickupTiming] = useState<"now" | "later">("now")
 
   useEffect(() => {
     if (pickupLocation.trim() && dropoffLocation.trim()) {
       const timer = setTimeout(() => {
-        if (pickupTiming === "later") {
-          onNavigate("schedule-ride", {
-            pickupLocation,
-            dropoffLocation,
-          })
-        } else {
-          onNavigate("choose-ride", {
-            pickupLocation,
-            dropoffLocation,
-            isScheduled: false,
-          })
-        }
+        onNavigate("confirm-location", {
+          pickupLocation,
+          dropoffLocation,
+        })
       }, 500)
       return () => clearTimeout(timer)
     }
-  }, [pickupLocation, dropoffLocation, pickupTiming, onNavigate])
+  }, [pickupLocation, dropoffLocation, onNavigate])
 
   const handleLocationSelect = (location: (typeof locationSuggestions)[0]) => {
     if (!dropoffLocation) {
@@ -64,9 +54,14 @@ export function SetLocationScreen({
     }
   }
 
-  const handleTimingSelect = (timing: "now" | "later") => {
-    setPickupTiming(timing)
-    setShowTimingModal(false)
+  const handleMapPinSelect = () => {
+    const locationType = !dropoffLocation ? "destination" : "pickup"
+
+    onNavigate("map-location", {
+      locationType,
+      currentPickup: pickupLocation,
+      currentDropoff: dropoffLocation,
+    })
   }
 
   return (
@@ -80,19 +75,6 @@ export function SetLocationScreen({
           className="flex-1 flex flex-col"
         >
           <h1 className="text-2xl font-bold text-gray-900 mb-6">Plan your ride</h1>
-
-          <div className="mb-6">
-            <button
-              onClick={() => setShowTimingModal(true)}
-              className="flex items-center gap-2 bg-white hover:bg-gray-50 px-4 py-3 rounded-full transition-colors shadow-sm border border-gray-200"
-            >
-              <Calendar className="h-4 w-4 text-blue-600" />
-              <span className="font-medium text-gray-900">
-                {pickupTiming === "now" ? "Pickup now" : "Pickup later"}
-              </span>
-              <ChevronDown className="h-4 w-4 text-gray-600" />
-            </button>
-          </div>
 
           <div className="mb-6">
             <div className="relative">
@@ -119,9 +101,9 @@ export function SetLocationScreen({
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto bg-white rounded-xl shadow-sm">
+          <div className="flex-1 bg-white rounded-xl shadow-sm">
             <div className="p-4">
-              {locationSuggestions.map((location) => (
+              {locationSuggestions.slice(0, 6).map((location) => (
                 <button
                   key={location.id}
                   onClick={() => handleLocationSelect(location)}
@@ -141,66 +123,25 @@ export function SetLocationScreen({
                   </div>
                 </button>
               ))}
+
+              <button
+                onClick={handleMapPinSelect}
+                className="w-full flex items-center gap-3 px-0 py-4 hover:bg-blue-50 text-left rounded-lg border-t border-gray-200 mt-2"
+              >
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <MapPin className="h-4 w-4 text-blue-600" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-blue-600">Set location on map</p>
+                  <p className="text-sm text-gray-500">Choose your location using the map</p>
+                </div>
+              </button>
             </div>
           </div>
         </motion.div>
       </div>
-
-      {showTimingModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl"
-          >
-            <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6"></div>
-
-            <h2 className="text-xl font-bold text-gray-900 mb-6">When do you need a ride?</h2>
-
-            <div className="space-y-3 mb-8">
-              <button
-                onClick={() => handleTimingSelect("now")}
-                className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100"
-              >
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="flex-1 text-left">
-                  <h3 className="font-semibold text-gray-900">Now</h3>
-                  <p className="text-gray-600 text-sm">Request a ride, hop-in, and go</p>
-                </div>
-                <div className="w-6 h-6 border-2 border-gray-300 rounded-full flex items-center justify-center">
-                  {pickupTiming === "now" && <div className="w-3 h-3 bg-blue-600 rounded-full"></div>}
-                </div>
-              </button>
-
-              <button
-                onClick={() => handleTimingSelect("later")}
-                className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100"
-              >
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Calendar className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="flex-1 text-left">
-                  <h3 className="font-semibold text-gray-900">Later</h3>
-                  <p className="text-gray-600 text-sm">Reserve for extra peace of mind</p>
-                </div>
-                <div className="w-6 h-6 border-2 border-gray-300 rounded-full flex items-center justify-center">
-                  {pickupTiming === "later" && <div className="w-3 h-3 bg-blue-600 rounded-full"></div>}
-                </div>
-              </button>
-            </div>
-
-            <button
-              onClick={() => setShowTimingModal(false)}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-xl transition-colors"
-            >
-              Done
-            </button>
-          </motion.div>
-        </div>
-      )}
     </div>
   )
 }

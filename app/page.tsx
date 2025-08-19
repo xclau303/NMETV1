@@ -38,6 +38,8 @@ import { ChatSupportScreen } from "@/components/chat-support-screen"
 import { DriverChatScreen } from "@/components/driver-chat-screen"
 import { SupportScreen } from "@/components/support-screen"
 import { PostRideScreen } from "@/components/post-ride-screen"
+import { MapLocationScreen } from "@/components/map-location-screen" // Added MapLocationScreen import
+import { ConfirmLocationScreen } from "@/components/confirm-location-screen" // Added import for new confirmation screen
 
 export type Screen =
   | "splash"
@@ -54,6 +56,7 @@ export type Screen =
   | "reset-password"
   | "reset-confirm"
   | "set-location"
+  | "confirm-location" // Added confirm-location screen type
   | "schedule-ride"
   | "choose-ride"
   | "book-later"
@@ -76,6 +79,7 @@ export type Screen =
   | "chat-support"
   | "driver-chat"
   | "support"
+  | "map-location"
 
 interface ScreenState {
   name: Screen
@@ -259,7 +263,7 @@ export default function MediRideApp() {
           <SetLocationScreen
             onNavigate={navigateToScreen}
             initialPickup={currentScreen.data?.initialPickup}
-            initialDropoff={currentScreen.data?.initialDropoff}
+            initialDropoff={currentScreen.data?.selectedAddress || currentScreen.data?.initialDropoff}
             goBack={goBack}
           />
         )
@@ -363,6 +367,26 @@ export default function MediRideApp() {
         return <DriverChatScreen onNavigate={navigateToScreen} goBack={goBack} />
       case "support":
         return <SupportScreen onNavigate={navigateToScreen} goBack={goBack} />
+      case "confirm-location": // Added confirm-location case
+        return (
+          <ConfirmLocationScreen
+            onNavigate={navigateToScreen}
+            pickupLocation={currentScreen.data?.pickupLocation}
+            dropoffLocation={currentScreen.data?.dropoffLocation}
+            pickupTiming={currentScreen.data?.pickupTiming}
+            goBack={goBack}
+          />
+        )
+      case "map-location":
+        return (
+          <MapLocationScreen
+            onNavigate={navigateToScreen}
+            locationType={currentScreen.data?.locationType}
+            currentPickup={currentScreen.data?.currentPickup}
+            currentDropoff={currentScreen.data?.currentDropoff}
+            goBack={goBack}
+          />
+        )
       default:
         return <WelcomeScreen onNavigate={navigateToScreen} />
     }
